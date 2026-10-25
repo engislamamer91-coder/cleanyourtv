@@ -1,0 +1,51 @@
+name: My TV build
+
+# Builds the launcher, the prayer-times and matches add-ons, and the wallpaper theme, and puts them in
+# one small download: Actions > the latest run > Artifacts > my-tv.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platforms;android-34 build-tools;34.0.0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Launcher
+        run: cd launcher && chmod +x gradlew && ./gradlew --no-daemon -q assembleRelease
+      - name: Prayer times
+        run: cd addons/prayer-times && chmod +x gradlew && ./gradlew --no-daemon -q assembleRelease
+      - name: Matches
+        run: cd addons/matches && chmod +x gradlew && ./gradlew --no-daemon -q assembleRelease
+      - name: Wallpapers
+        run: |
+          pip install -q pillow
+          python mytv/fetch_wallpapers.py
+      - name: Package
+        run: |
+          mkdir -p out/mytv
+          cp launcher/app/build/outputs/apk/release/app-release.apk out/mytv/launcher.apk
+          cp addons/prayer-times/app/build/outputs/apk/release/app-release.apk out/mytv/prayer-times.apk
+          cp addons/matches/app/build/outputs/apk/release/app-release.apk out/mytv/matches.apk
+          cp -r mytv/theme mytv/install.ps1 mytv/theme.ps1 out/mytv/
+          ls -la out/mytv out/mytv/theme/wallpapers
+          du -sh out/mytv
+      - uses: actions/upload-artifact@v4
+        with:
+          name: my-tv
+          path: out
+          retention-days: 30

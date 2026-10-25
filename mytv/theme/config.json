@@ -1,0 +1,11 @@
+{
+  "wallpaper": true,
+  "wallpaper_rotation_minutes": 30,
+  "wallpaper_order": "shuffle",
+  "wallpaper_dim": 25,
+  "hidden_apps": [
+    "com.tcl.notereminder",
+    "com.tcl.usercenter"
+  ],
+  "wallpaper_captions": true
+}

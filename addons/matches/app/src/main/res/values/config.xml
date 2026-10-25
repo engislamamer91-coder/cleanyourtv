@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ESPN league codes, then "|" and an optional team filter (comma-separated, matched in team names).
+         Leagues without a filter show every match. -->
+    <string-array name="leagues" translatable="false">
+        <item>eng.1|</item>
+        <item>esp.1|</item>
+        <item>uefa.champions|</item>
+        <item>egy.1|Ahly,Zamalek</item>
+        <item>caf.champions|Ahly,Zamalek</item>
+        <item>caf.confed|Ahly,Zamalek</item>
+    </string-array>
+    <string name="timezone" translatable="false">Asia/Dubai</string>
+    <integer name="days">7</integer>
+    <color name="accent">#3D8BFD</color>
+</resources>
