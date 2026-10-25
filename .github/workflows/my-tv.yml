@@ -51,7 +51,7 @@ jobs:
           cp launcher/app/build/outputs/apk/release/app-release.apk out/mytv/launcher.apk
           cp addons/prayer-times/app/build/outputs/apk/release/app-release.apk out/mytv/prayer-times.apk
           cp addons/matches/app/build/outputs/apk/release/app-release.apk out/mytv/matches.apk
-          cp -r mytv/theme mytv/install.ps1 mytv/theme.ps1 out/mytv/
+          cp -r mytv/theme mytv/install.ps1 mytv/theme.ps1 mytv/handover.ps1 out/mytv/
           du -sh out/mytv
       - uses: actions/upload-artifact@v4
         with:
