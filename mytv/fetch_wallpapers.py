@@ -75,6 +75,8 @@ def main():
             title = p['title']
             if title in seen or not p.get('imageinfo'):
                 continue
+            if re.search(r'church|kirche|kerk|cathedral|chapel|temple|kapelle|église|iglesia|chiesa|people|selfie', title, re.I):
+                continue   # keep the collection to mosques and nature
             ii = p['imageinfo'][0]
             w, h = ii.get('width', 0), ii.get('height', 0)
             if w < 1600 or h < 900 or w / h < 1.3 or w / h > 2.2:
