@@ -1,0 +1,25 @@
+name: Nature photos
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["mytv/nature.py", ".github/workflows/nature.yml"]
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -q pillow && python mytv/nature.py 2>&1 | tee nature-log.txt
+      - name: Save to the nature branch
+        if: always()
+        run: |
+          mkdir -p /tmp/n && cp -r nature/. /tmp/n/ 2>/dev/null; cp nature-log.txt /tmp/n/ 2>/dev/null
+          cd /tmp/n && git init -q . && git checkout -q -b nature
+          git -c user.name=build -c user.email=build@localhost add -A
+          git -c user.name=build -c user.email=build@localhost commit -q -m "nature ${GITHUB_SHA}"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" nature
