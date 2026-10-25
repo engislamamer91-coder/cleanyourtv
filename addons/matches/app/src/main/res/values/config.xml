@@ -7,8 +7,6 @@
         <item>esp.1|</item>
         <item>uefa.champions|</item>
         <item>egy.1|Ahly,Zamalek</item>
-        <item>caf.champions|Ahly,Zamalek</item>
-        <item>caf.confed|Ahly,Zamalek</item>
     </string-array>
     <string name="timezone" translatable="false">Asia/Dubai</string>
     <integer name="days">7</integer>

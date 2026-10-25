@@ -173,6 +173,10 @@ public class MainActivity extends Activity {
                     failed++;
                     Log.w(TAG, code + ": " + e);
                 }
+                // Show what has arrived so far instead of waiting for every league.
+                List<Match> partial = new ArrayList<>(all);
+                Collections.sort(partial, (a, b) -> a.when.compareTo(b.when));
+                if (!partial.isEmpty()) main.post(() -> render(partial));
             }
             Collections.sort(all, (a, b) -> a.when.compareTo(b.when));
             final int f = failed;
