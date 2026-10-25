@@ -27,6 +27,8 @@ jobs:
           python-version: "3.12"
       - name: Build everything
         run: |
+          # One fixed signing key for every build, so a new build installs over the last one on the TV.
+          mkdir -p ~/.android && cp mytv/debug.keystore ~/.android/debug.keystore
           mkdir -p /tmp/logs
           status=0
           step() { name=$1; shift; echo "== $name"; if ( set -o pipefail; "$@" 2>&1 | tee /tmp/logs/$name.txt ); then echo "OK $name" >> /tmp/logs/summary.txt; else echo "FAILED $name" >> /tmp/logs/summary.txt; status=1; fi; }
@@ -42,7 +44,7 @@ jobs:
           cp launcher/app/build/outputs/apk/release/app-release.apk out/mytv/launcher.apk
           cp addons/prayer-times/app/build/outputs/apk/release/app-release.apk out/mytv/prayer-times.apk
           cp addons/matches/app/build/outputs/apk/release/app-release.apk out/mytv/matches.apk
-          cp -r mytv/theme mytv/install.ps1 mytv/theme.ps1 mytv/handover.ps1 out/mytv/
+          cp -r mytv/theme mytv/install.ps1 mytv/theme.ps1 mytv/handover.ps1 mytv/reinstall.ps1 out/mytv/
           du -sh out/mytv
       - name: Save logs to the build-logs branch
         if: always()

@@ -8,5 +8,18 @@
     "com.tcl.usercenter"
   ],
   "wallpaper_captions": true,
-  "show_stats": true
+  "show_stats": true,
+  "dock_apps": [
+    "net.mbc.shahidTV",
+    "org.smarttube.stable",
+    "com.parsifal.starz",
+    "com.tcl.tv",
+    "com.islam.tv.matches"
+  ],
+  "fill_dock": false,
+  "rows_below_dock": 0,
+  "dock_band": false,
+  "dock_title": false,
+  "ambient_glow": false,
+  "show_greeting": false
 }
