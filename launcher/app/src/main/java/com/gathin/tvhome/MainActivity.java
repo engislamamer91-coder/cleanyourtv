@@ -2033,9 +2033,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             @Override
             public void run() {
                 if (statsBg != bg) return;
-                String line = readStatsLine();
+                CharSequence info = readInfoLines();
+                CharSequence line = info != null ? info : readStatsLine();
                 handler.post(() -> {
-                    if (showStats && stats != null && statsBg == bg) stats.setText(line);
+                    if (showStats && stats != null && statsBg == bg) {
+                        stats.setSingleLine(info == null);
+                        if (info != null) stats.setMaxLines(2);
+                        stats.setText(line);
+                    }
                 });
                 if (statsBg == bg) bg.postDelayed(this, STATS_MS);
             }
@@ -2051,6 +2056,35 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         // Paused (the quick panel or an app on top): keep the last line on screen. Taking it away moved the grid up
         // under a glass highlight that stayed put.
         if (!showStats) stats.setVisibility(View.GONE);
+    }
+
+    /**
+     * Personal build: the next prayer, the temperature and the matches from the matches add-on's provider, in
+     * place of the stats line. Line 1 larger, line 2 (the matches) in the stats line's small size. Null when the
+     * add-on is not installed or says nothing, and the stats line is shown as before. Runs off the main thread.
+     */
+    private CharSequence readInfoLines() {
+        try (android.database.Cursor c = getContentResolver().query(
+                android.net.Uri.parse("content://com.islam.tv.matches.info/home"), null, null, null, null)) {
+            if (c == null || !c.moveToFirst()) return null;
+            String l1 = c.getString(0), l2 = c.getString(1);
+            if ((l1 == null || l1.isEmpty()) && (l2 == null || l2.isEmpty())) return null;
+            android.text.SpannableStringBuilder b = new android.text.SpannableStringBuilder();
+            if (l1 != null && !l1.isEmpty()) {
+                b.append(l1);
+                b.setSpan(new android.text.style.RelativeSizeSpan(1.45f), 0, b.length(), 0);
+                b.setSpan(new android.text.style.ForegroundColorSpan(0xFFFFFFFF), 0, b.length(), 0);
+            }
+            if (l2 != null && !l2.isEmpty()) {
+                if (b.length() > 0) b.append('\n');
+                int start = b.length();
+                b.append(l2);
+                b.setSpan(new android.text.style.ForegroundColorSpan(0xB3FFFFFF), start, b.length(), 0);
+            }
+            return b;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     /** One quiet line, e.g. "CPU 8%  ·  Memory 430 MB free  ·  Storage 3.1 GB free". Runs off the main thread. */

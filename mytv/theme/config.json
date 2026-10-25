@@ -7,5 +7,6 @@
     "com.tcl.notereminder",
     "com.tcl.usercenter"
   ],
-  "wallpaper_captions": true
+  "wallpaper_captions": true,
+  "show_stats": true
 }

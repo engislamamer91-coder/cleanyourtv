@@ -68,6 +68,8 @@
         <!-- Coocaa OS sources for the Inputs menu (coocaa_sources); see CoocaaSources. -->
         <provider android:authorities="com.skyworth.tv.provider" />
         <provider android:authorities="com.skyworth.tv.sdk.provider" />
+        <!-- Personal build: Home's info lines from the matches add-on. -->
+        <provider android:authorities="com.islam.tv.matches.info" />
     </queries>
 
     <application

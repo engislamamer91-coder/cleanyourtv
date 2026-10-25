@@ -42,7 +42,7 @@ import java.util.TimeZone;
 public class MainActivity extends Activity {
     private static final String TAG = "Matches";
     private static final long REFRESH_MS = 5 * 60_000L;
-    private static final Map<String, String> LEAGUE_AR = new HashMap<>();
+    static final Map<String, String> LEAGUE_AR = new HashMap<>();
     static {
         LEAGUE_AR.put("eng.1", "الدوري الإنجليزي");
         LEAGUE_AR.put("esp.1", "الدوري الإسباني");
@@ -61,7 +61,7 @@ public class MainActivity extends Activity {
         LEAGUE_COLOR.put("caf.confed", 0xFF16A085);
     }
 
-    private static final class Match {
+    static final class Match {
         String league, home, away, homeScore, awayScore, state, detail;
         Date when;
     }
@@ -192,7 +192,7 @@ public class MainActivity extends Activity {
         }).start();
     }
 
-    private void parse(String code, String[] teams, JSONObject json, List<Match> out) throws Exception {
+    static void parse(String code, String[] teams, JSONObject json, List<Match> out) throws Exception {
         JSONArray events = json.optJSONArray("events");
         if (events == null) return;
         for (int i = 0; i < events.length(); i++) {
@@ -232,7 +232,7 @@ public class MainActivity extends Activity {
         }
     }
 
-    private static Date parseDate(String s) {
+    static Date parseDate(String s) {
         String[] patterns = {"yyyy-MM-dd'T'HH:mm'Z'", "yyyy-MM-dd'T'HH:mm:ss'Z'", "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"};
         for (String p : patterns) {
             try {
@@ -333,7 +333,7 @@ public class MainActivity extends Activity {
         return r;
     }
 
-    private static String fetch(String url) throws Exception {
+    static String fetch(String url) throws Exception {
         HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
         c.setConnectTimeout(8000);
         c.setReadTimeout(10000);

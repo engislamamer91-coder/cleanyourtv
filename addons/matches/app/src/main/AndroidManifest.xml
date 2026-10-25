@@ -26,5 +26,10 @@
             </intent-filter>
             <meta-data android:name="com.gathin.tvhome.card" android:resource="@xml/module_card" />
         </activity>
+        <!-- Read-only lines for the launcher's Home screen (next prayer, temperature, matches). Nothing private. -->
+        <provider
+            android:name=".InfoProvider"
+            android:authorities="com.islam.tv.matches.info"
+            android:exported="true" />
     </application>
 </manifest>
