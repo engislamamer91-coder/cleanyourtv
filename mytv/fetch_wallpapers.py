@@ -3,33 +3,46 @@
 Runs in GitHub Actions (the Commons API needs no key). Only CC0, public domain, CC BY and CC BY-SA files
 are kept; each one's author and licence go to CREDITS.md, and its place to captions.txt.
 """
-import json, os, re, sys, urllib.parse, urllib.request
+import json, os, re, sys, time, urllib.error, urllib.parse, urllib.request
 from io import BytesIO
 from PIL import Image
 
 OUT = os.path.join(os.path.dirname(__file__), 'theme', 'wallpapers')
-# (search query on Commons, caption shown on the TV, how many)
+# (Commons categories to try, caption shown on the TV, how many). Only files directly in one of the
+# categories are used, so a caption always matches its picture. Quality/featured files come first.
 TOPICS = [
-    ('"Sheikh Zayed Grand Mosque" incategory:"Quality images"', 'جامع الشيخ زايد الكبير، أبوظبي', 4),
-    ('"Masjid al-Haram" incategory:"Quality images"', 'المسجد الحرام، مكة المكرمة', 3),
-    ('Kaaba Mecca incategory:"Quality images"', 'الكعبة المشرفة، مكة المكرمة', 2),
-    ('"Prophet\'s Mosque" incategory:"Quality images"', 'المسجد النبوي، المدينة المنورة', 3),
-    ('"Masjid an-Nabawi" incategory:"Quality images"', 'المسجد النبوي، المدينة المنورة', 2),
-    ('mosque sunset incategory:"Quality images"', 'مسجد عند الغروب', 2),
-    ('Liwa Oasis desert dunes incategory:"Quality images"', 'صحراء ليوا، أبوظبي', 2),
-    ('Jebel Hafeet incategory:"Quality images"', 'جبل حفيت، العين', 1),
-    ('mountain lake landscape incategory:"Featured pictures on Wikimedia Commons"', 'منظر طبيعي', 4),
-    ('waterfall forest incategory:"Featured pictures on Wikimedia Commons"', 'منظر طبيعي', 2),
-    ('sunset sea coast incategory:"Featured pictures on Wikimedia Commons"', 'منظر طبيعي', 2),
+    (['Sheikh_Zayed_Grand_Mosque', 'Sheikh_Zayed_Grand_Mosque_Center', 'Sheikh_Zayed_Mosque'], 'جامع الشيخ زايد الكبير، أبوظبي', 5),
+    (['Masjid_al-Haram', 'Al-Masjid_al-Haram', 'Exterior_of_Masjid_al-Haram'], 'المسجد الحرام، مكة المكرمة', 4),
+    (['Kaaba'], 'الكعبة المشرفة، مكة المكرمة', 2),
+    (['Al-Masjid_an-Nabawi', 'Masjid_an-Nabawi', 'Exterior_of_Al-Masjid_an-Nabawi', 'Green_Dome'], 'المسجد النبوي، المدينة المنورة', 5),
+    (['Liwa_Oasis', 'Rub_al_Khali'], 'صحراء الربع الخالي', 2),
+    (['Jebel_Hafeet'], 'جبل حفيت، العين', 1),
+    (['Featured_pictures_of_landscapes'], 'منظر طبيعي', 6),
+    (['Featured_pictures_of_waterfalls'], 'شلال', 2),
 ]
 OK_LICENCE = re.compile(r'^(CC0|Public domain|PD|CC BY(-SA)? [0-9.]+)', re.I)
-UA = {'User-Agent': 'cleanyourtv-personal-theme/1.0 (github.com/Gathin23/cleanyourtv)'}
+UA = {'User-Agent': 'cleanyourtv-personal-theme/1.1 (https://github.com/Gathin23/cleanyourtv; personal TV wallpapers) python-urllib'}
+
+
+def get(url):
+    """GET with a pause before every request and a backoff on 429/5xx (Wikimedia rate-limits CI runners)."""
+    for attempt in range(6):
+        time.sleep(1.5)
+        try:
+            with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=120) as r:
+                return r.read()
+        except urllib.error.HTTPError as e:
+            if e.code != 429 and e.code < 500:
+                raise
+            wait = int(e.headers.get('Retry-After') or 0) or 10 * (attempt + 1)
+            print(f'HTTP {e.code}, waiting {wait}s', file=sys.stderr)
+            time.sleep(min(wait, 90))
+    raise RuntimeError('gave up on ' + url)
 
 
 def api(params):
     url = 'https://commons.wikimedia.org/w/api.php?' + urllib.parse.urlencode(dict(params, format='json'))
-    with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=60) as r:
-        return json.load(r)
+    return json.loads(get(url))
 
 
 def strip_html(s):
@@ -39,11 +52,22 @@ def strip_html(s):
 def main():
     os.makedirs(OUT, exist_ok=True)
     captions, credits, seen, n = [], [], set(), 0
-    for query, caption, want in TOPICS:
-        res = api({'action': 'query', 'generator': 'search', 'gsrsearch': 'filetype:bitmap ' + query,
-                   'gsrnamespace': 6, 'gsrlimit': 40, 'prop': 'imageinfo',
-                   'iiprop': 'url|size|extmetadata', 'iiurlwidth': 1920})
-        pages = sorted(res.get('query', {}).get('pages', {}).values(), key=lambda p: p.get('index', 0))
+    for cats, caption, want in TOPICS:
+        pages = []
+        for cat in cats:
+            for extra in (' incategory:"Quality_images"', ' incategory:"Featured_pictures_on_Wikimedia_Commons"', ''):
+                try:
+                    res = api({'action': 'query', 'generator': 'search',
+                               'gsrsearch': f'filetype:bitmap incategory:"{cat}"' + extra,
+                               'gsrnamespace': 6, 'gsrlimit': 30, 'prop': 'imageinfo',
+                               'iiprop': 'url|size|extmetadata', 'iiurlwidth': 1920})
+                except Exception as e:
+                    print('query failed', cat, extra, e, file=sys.stderr)
+                    continue
+                found = sorted(res.get('query', {}).get('pages', {}).values(), key=lambda p: p.get('index', 0))
+                print(f'  {cat}{extra}: {len(found)} files')
+                pages += found
+        query = '/'.join(cats)
         got = 0
         for p in pages:
             if got >= want:
@@ -61,9 +85,7 @@ def main():
                 continue
             artist = strip_html(meta.get('Artist', {}).get('value', 'unknown'))[:120]
             try:
-                req = urllib.request.Request(ii.get('thumburl') or ii['url'], headers=UA)
-                with urllib.request.urlopen(req, timeout=120) as r:
-                    img = Image.open(BytesIO(r.read())).convert('RGB')
+                img = Image.open(BytesIO(get(ii.get('thumburl') or ii['url']))).convert('RGB')
             except Exception as e:
                 print('skip', title, e, file=sys.stderr)
                 continue
@@ -83,6 +105,7 @@ def main():
         print(f'{query}: {got}/{want}')
     if n == 0:
         sys.exit('no wallpapers downloaded')
+    print(f'{n} wallpapers')
     with open(os.path.join(OUT, 'captions.txt'), 'w', encoding='utf-8') as f:
         f.write('\n'.join(captions) + '\n')
     with open(os.path.join(os.path.dirname(OUT), 'CREDITS.md'), 'w', encoding='utf-8') as f:
