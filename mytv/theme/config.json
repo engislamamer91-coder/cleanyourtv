@@ -1,13 +1,9 @@
 {
-  "wallpaper": true,
-  "wallpaper_rotation_minutes": 2,
-  "wallpaper_order": "shuffle",
-  "wallpaper_dim": 25,
+  "wallpaper": false,
   "hidden_apps": [
     "com.tcl.notereminder",
     "com.tcl.usercenter"
   ],
-  "wallpaper_captions": true,
   "show_stats": true,
   "dock_apps": [
     "net.mbc.shahidTV",

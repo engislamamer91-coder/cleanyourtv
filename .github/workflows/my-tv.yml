@@ -35,7 +35,6 @@ jobs:
           step launcher bash -c 'cd launcher && chmod +x gradlew && ./gradlew --no-daemon assembleRelease'
           step prayer bash -c 'cd addons/prayer-times && chmod +x gradlew && ./gradlew --no-daemon assembleRelease'
           step matches bash -c 'cd addons/matches && chmod +x gradlew && ./gradlew --no-daemon assembleRelease'
-          step wallpapers bash -c 'pip install -q pillow && python mytv/fetch_wallpapers.py'
           cat /tmp/logs/summary.txt
           exit $status
       - name: Package
