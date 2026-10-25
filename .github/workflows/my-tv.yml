@@ -1,14 +1,14 @@
 name: My TV build
 
 # Builds the launcher, the prayer-times and matches add-ons, and the wallpaper theme, and puts them in
-# one small download: Actions > the latest run > Artifacts > my-tv.
+# one small download: Actions > the latest run > Artifacts > my-tv. Build logs go to the build-logs branch.
 on:
   workflow_dispatch:
   push:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -25,16 +25,26 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Launcher
-        run: cd launcher && chmod +x gradlew && ./gradlew --no-daemon -q assembleRelease
-      - name: Prayer times
-        run: cd addons/prayer-times && chmod +x gradlew && ./gradlew --no-daemon -q assembleRelease
-      - name: Matches
-        run: cd addons/matches && chmod +x gradlew && ./gradlew --no-daemon -q assembleRelease
-      - name: Wallpapers
+      - name: Build everything
         run: |
-          pip install -q pillow
-          python mytv/fetch_wallpapers.py
+          mkdir -p /tmp/logs
+          status=0
+          step() { name=$1; shift; echo "== $name"; if ( set -o pipefail; "$@" 2>&1 | tee /tmp/logs/$name.txt ); then echo "OK $name" >> /tmp/logs/summary.txt; else echo "FAILED $name" >> /tmp/logs/summary.txt; status=1; fi; }
+          step launcher bash -c 'cd launcher && chmod +x gradlew && ./gradlew --no-daemon assembleRelease'
+          step prayer bash -c 'cd addons/prayer-times && chmod +x gradlew && ./gradlew --no-daemon assembleRelease'
+          step matches bash -c 'cd addons/matches && chmod +x gradlew && ./gradlew --no-daemon assembleRelease'
+          step wallpapers bash -c 'pip install -q pillow && python mytv/fetch_wallpapers.py'
+          cat /tmp/logs/summary.txt
+          exit $status
+      - name: Save logs to the build-logs branch
+        if: always()
+        run: |
+          cd /tmp/logs 2>/dev/null || exit 0
+          for f in *.txt; do tail -n 300 "$f" > "$f.tmp" && mv "$f.tmp" "$f"; done
+          git init -q . && git checkout -q -b build-logs
+          git -c user.name=build -c user.email=build@localhost add -A
+          git -c user.name=build -c user.email=build@localhost commit -q -m "logs ${GITHUB_SHA}"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" build-logs
       - name: Package
         run: |
           mkdir -p out/mytv
@@ -42,7 +52,6 @@ jobs:
           cp addons/prayer-times/app/build/outputs/apk/release/app-release.apk out/mytv/prayer-times.apk
           cp addons/matches/app/build/outputs/apk/release/app-release.apk out/mytv/matches.apk
           cp -r mytv/theme mytv/install.ps1 mytv/theme.ps1 out/mytv/
-          ls -la out/mytv out/mytv/theme/wallpapers
           du -sh out/mytv
       - uses: actions/upload-artifact@v4
         with:
