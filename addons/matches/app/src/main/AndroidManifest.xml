@@ -26,6 +26,17 @@
             </intent-filter>
             <meta-data android:name="com.gathin.tvhome.card" android:resource="@xml/module_card" />
         </activity>
+        <!-- Screensaver: prayer times, the next prayer's countdown and the next matches. -->
+        <service
+            android:name=".InfoDream"
+            android:label="مواقيت الصلاة والمباريات"
+            android:exported="true"
+            android:permission="android.permission.BIND_DREAM_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.dreams.DreamService" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </service>
         <!-- Read-only lines for the launcher's Home screen (next prayer, temperature, matches). Nothing private. -->
         <provider
             android:name=".InfoProvider"
