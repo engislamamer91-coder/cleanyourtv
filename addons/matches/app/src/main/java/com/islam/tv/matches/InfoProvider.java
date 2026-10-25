@@ -113,7 +113,7 @@ public class InfoProvider extends ContentProvider {
 
     // ---- refresh -----------------------------------------------------------------------------------------
 
-    private static void maybeRefresh(Context ctx, SharedPreferences p) {
+    static void maybeRefresh(Context ctx, SharedPreferences p) {
         long now = System.currentTimeMillis();
         boolean prayer = !day(ctx, 0).equals(p.getString("prayer_day", ""))
                 && now - p.getLong("prayer_try", 0) > PRAYER_RETRY_MS;
@@ -143,10 +143,17 @@ public class InfoProvider extends ContentProvider {
         p.edit().putLong("prayer_try", System.currentTimeMillis()).apply();
         try {
             String base = "https://api.aladhan.com/v1/timings/%s?latitude=" + LAT + "&longitude=" + LON + "&method=" + METHOD;
-            JSONObject t = new JSONObject(MainActivity.fetch(String.format(base, day(ctx, 0))))
-                    .getJSONObject("data").getJSONObject("timings");
+            JSONObject data = new JSONObject(MainActivity.fetch(String.format(base, day(ctx, 0)))).getJSONObject("data");
+            JSONObject t = data.getJSONObject("timings");
+            try {
+                JSONObject h = data.getJSONObject("date").getJSONObject("hijri");
+                p.edit().putString("hijri", h.getString("day") + " " + h.getJSONObject("month").getString("ar") + " "
+                        + h.getString("year") + " هـ").apply();
+            } catch (Exception ignored) {
+            }
             SharedPreferences.Editor e = p.edit();
             for (int i = 0; i < PRAYER_KEYS.length; i++) e.putString("p_" + i, cleanTime(t.getString(PRAYER_KEYS[i])));
+            e.putString("sunrise", cleanTime(t.optString("Sunrise", "")));
             try {
                 JSONObject t2 = new JSONObject(MainActivity.fetch(String.format(base, day(ctx, 1))))
                         .getJSONObject("data").getJSONObject("timings");
@@ -240,7 +247,26 @@ public class InfoProvider extends ContentProvider {
             }
         }
         if (b.length() == 0) b.append("لا توجد مباريات في الأيام القادمة");
-        p.edit().putString("matches_line", b.toString()).putBoolean("live", live).apply();
+        // The next matches as rows for the screensaver: live first, then upcoming, eight at most.
+        org.json.JSONArray rows = new org.json.JSONArray();
+        List<MainActivity.Match> next = new ArrayList<>();
+        for (MainActivity.Match m : all) if ("in".equals(m.state)) next.add(m);
+        for (MainActivity.Match m : all) if ("pre".equals(m.state) && next.size() < 8) next.add(m);
+        for (MainActivity.Match m : next) {
+            try {
+                String d = ymd.format(m.when);
+                JSONObject r = new JSONObject();
+                r.put("league", MainActivity.LEAGUE_AR.containsKey(m.league) ? MainActivity.LEAGUE_AR.get(m.league) : m.league);
+                r.put("home", m.home).put("away", m.away).put("state", m.state);
+                r.put("score", m.homeScore + " - " + m.awayScore).put("detail", m.detail == null ? "" : m.detail);
+                r.put("day", d.equals(today) ? "اليوم" : d.equals(tomorrow) ? "بكرة" : dayName.format(m.when));
+                r.put("time", hm.format(m.when));
+                rows.put(r);
+            } catch (Exception ignored) {
+            }
+        }
+        p.edit().putString("matches_line", b.toString()).putString("matches_rows", rows.toString())
+                .putBoolean("live", live).apply();
     }
 
     @Override
